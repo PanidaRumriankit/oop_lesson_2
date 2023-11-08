@@ -15,6 +15,24 @@ with open(os.path.join(__location__, 'Countries.csv')) as f:
     for r in rows:
         countries.append(dict(r))
 
+titanic = []
+with open(os.path.join(__location__, 'Titanic.csv')) as f:
+    rows = csv.DictReader(f)
+    for r in rows:
+        titanic.append(dict(r))
+
+teams = []
+with open(os.path.join(__location__, 'Teams.csv')) as f:
+    rows = csv.DictReader(f)
+    for r in rows:
+        teams.append(dict(r))
+
+players = []
+with open(os.path.join(__location__, 'Players.csv')) as f:
+    rows = csv.DictReader(f)
+    for r in rows:
+        players.append(r)
+
 class DB:
     def __init__(self):
         self.database = []
@@ -73,9 +91,15 @@ class Table:
 
 table1 = Table('cities', cities)
 table2 = Table('countries', countries)
+table3 = Table('titanic', titanic)
+table4 = Table('teams', teams)
+table5 = Table('players', players)
 my_DB = DB()
 my_DB.insert(table1)
 my_DB.insert(table2)
+my_DB.insert(table3)
+my_DB.insert(table4)
+my_DB.insert(table5)
 my_table1 = my_DB.search('cities')
 
 print("Test filter: only filtering out cities in Italy") 
@@ -121,3 +145,49 @@ for item in my_table2.table:
     if len(my_table1_filtered.table) >= 1:
         print(item['country'], my_table1_filtered.aggregate(lambda x: min(x), 'latitude'), my_table1_filtered.aggregate(lambda x: max(x), 'latitude'))
 print()
+
+print('player on a team with “ia” in the team name played less than 200 minutes and made more than 100 passes')
+my_table5 = my_DB.search('players')
+my_table5_filtered = my_table5.filter(lambda x: 'ia' in x['team'] and int(x['minutes']) < 200 and int(x['passes']) > 100)
+my_table5_selected = my_table5_filtered.select(['surname', 'team', 'position'])
+print(my_table5_selected)
+print()
+
+my_table4 = my_DB.search('teams')
+my_table4_filtered_above10 = my_table4.filter(lambda x: int(x['ranking']) <= 10)
+my_table4_filtered_below10 = my_table4.filter(lambda x: int(x['ranking']) > 10)
+avg1 = []
+avg2 = []
+for item in my_table4_filtered_above10.table:
+    avg1.append(int(item['games']))
+for item in my_table4_filtered_below10.table:
+    avg2.append(int(item['games']))
+print('The average number of games played for teams ranking below 10 versus teams ranking above or equal 10')
+print(f"The average number of games played for teams ranking below 10: {sum(avg2)/len(avg2)}")
+print(f"The average number of games played for teams ranking above or equal 10: {sum(avg1)/len(avg1)}")
+print(my_table4_filtered_below10.aggregate(lambda x: sum(x) / len(x), 'games'))
+print(my_table4_filtered_above10.aggregate(lambda x: sum(x) / len(x), 'games'))
+print()
+
+print('The average number of passes made by forwards versus by midfielders')
+avg_mid = my_table5.filter(lambda x: x['position'] == 'midfielder').aggregate(lambda x: sum(x) / len(x), 'passes')
+print('The average number of passes made by midfielders:', avg_mid)
+avg_for = my_table5.filter(lambda x: x['position'] == 'forward').aggregate(lambda x: sum(x) / len(x), 'passes')
+print('The average number of passes made by forwards:', avg_for)
+print()
+
+my_table3 = my_DB.search('titanic')
+print('The average fare paid by passengers in the first class versus in the third class')
+avg_first = my_table3.filter(lambda x: x['class'] == '1').aggregate(lambda x: sum(x) / len(x), 'fare')
+avg_third = my_table3.filter(lambda x: x['class'] == '3').aggregate(lambda x: sum(x) / len(x), 'fare')
+print('The average fare paid by passengers in the first class:', avg_first)
+print('The average fare paid by passengers in the third class:', avg_third)
+print()
+
+print('The survival rate of male versus female passengers')
+sr_m = my_table3.filter(lambda x: x['gender'] == 'M')
+survival_m = sr_m.filter(lambda x: x['survived'] == 'yes')
+print('The survival rate of male:', 100 * len(survival_m.table) / len(sr_m.table), '%')
+sr_f = my_table3.filter(lambda x: x['gender'] == 'F')
+survival_f = sr_f.filter(lambda x: x['survived'] == 'yes')
+print('The survival rate of female:', 100 * len(survival_f.table) / len(sr_f.table), '%')
