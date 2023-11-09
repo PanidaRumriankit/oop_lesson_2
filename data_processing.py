@@ -191,3 +191,8 @@ print('The survival rate of male:', 100 * len(survival_m.table) / len(sr_m.table
 sr_f = my_table3.filter(lambda x: x['gender'] == 'F')
 survival_f = sr_f.filter(lambda x: x['survived'] == 'yes')
 print('The survival rate of female:', 100 * len(survival_f.table) / len(sr_f.table), '%')
+print()
+
+print('The total number of male passengers embarked at Southampton')
+m_south = my_table3.filter(lambda x: x['gender'] == 'M' and x['embarked'] == 'Southampton')
+print('The total number of male passengers embarked at Southampton:', len(m_south.table))
