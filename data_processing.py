@@ -73,9 +73,12 @@ class Table:
     def aggregate(self, function, aggregation_key):
         temps = []
         for item1 in self.table:
-            temps.append(float(item1[aggregation_key]))
+            if self.__is_float(item1[aggregation_key]):
+                temps.append(float(item1[aggregation_key]))
+            else:
+                temps.append(item1[aggregation_key])
         return function(temps)
-    
+
     def select(self, attributes_list):
         temps = []
         for item1 in self.table:
@@ -85,6 +88,45 @@ class Table:
                     dict_temp[key] = item1[key]
             temps.append(dict_temp)
         return temps
+
+    def __is_float(self, element):
+        if element is None:
+            return False
+        try:
+            float(element)
+            return True
+        except ValueError:
+            return False
+
+    def pivot_table(self, keys_to_pivot_list, keys_to_aggregate_list, aggregate_func_list):
+        unique_values_list = []
+        for x in keys_to_pivot_list:
+            l = []
+            for y in self.table:
+                if y[x] not in l:
+                    l.append(y[x])
+            unique_values_list.append(l)
+        from combination_gen import gen_comb_list
+        cop = []
+        filtered = gen_comb_list(unique_values_list)
+        for ele in filtered:
+            cop.append([ele])
+        k = 0
+        for ele in filtered:
+            y = self
+            i = 0
+            j = 0
+            agg = []
+            for item in ele:
+                y = y.filter(lambda x: x[keys_to_pivot_list[i]] == item)
+                i += 1
+            for l in keys_to_aggregate_list:
+                y_ag = y.aggregate(aggregate_func_list[j], l)
+                j += 1
+                agg.append(y_ag)
+            cop[k].append(agg)
+            k += 1
+        return cop
 
     def __str__(self):
         return self.table_name + ':' + str(self.table)
@@ -191,3 +233,17 @@ print('The survival rate of male:', 100 * len(survival_m.table) / len(sr_m.table
 sr_f = my_table3.filter(lambda x: x['gender'] == 'F')
 survival_f = sr_f.filter(lambda x: x['survived'] == 'yes')
 print('The survival rate of female:', 100 * len(survival_f.table) / len(sr_f.table), '%')
+
+print('The total number of male passengers embarked at Southampton')
+m_south = my_table3.filter(lambda x: x['gender'] == 'M' and x['embarked'] == 'Southampton')
+print('The total number of male passengers embarked at Southampton:', len(m_south.table))
+print()
+
+my_pivot = my_table3.pivot_table(['embarked', 'gender', 'class'], ['fare', 'fare', 'fare', 'last'], [lambda x: min(x), lambda x: max(x), lambda x: sum(x)/len(x), lambda x: len(x)])
+my_pivot1 = my_table5.pivot_table(['position'], ['passes', 'shots'], [lambda x: sum(x)/len(x), lambda x: sum(x)/len(x)])
+my_pivot3 = my_table3.pivot_table(['class', 'gender', 'survived'], ['survived', 'fare'], [lambda x: len(x), lambda x: sum(x)/len(x)])
+print(my_pivot)
+print(my_pivot1)
+print(my_pivot3)
+print()
+

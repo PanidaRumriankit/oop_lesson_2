@@ -35,4 +35,3 @@ def gen_comb_list(list_set):
     return new_l
 
 
-print(gen_comb_list([[1, 2, 3], [4, 5], [6, 7, 8]]))
